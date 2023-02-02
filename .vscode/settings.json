@@ -1,4 +1,7 @@
 {
+    "[bazel]": {
+        "editor.formatOnSave": true
+    },
     "bsv.bazel.buildFlags": [
         "--config=compdb",
         "--sandbox_base=/dev/shm",

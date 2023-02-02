@@ -94,7 +94,7 @@ cc_library(
     name = "headers",
     srcs = glob(
       ["torch/include/**/*.h"],
-      ["google/protobuf/**/*.h"],
+      ["torch/include/google/protobuf/**/*.h"],
     ),
 )
 """,

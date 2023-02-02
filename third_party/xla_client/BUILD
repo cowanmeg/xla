@@ -64,6 +64,275 @@ tf_cc_shared_object(
 )
 
 cc_library(
+    name = "tf_logging",
+    srcs = ["tf_logging.cc"],
+    hdrs = ["tf_logging.h"],
+    deps = [
+        "@org_tensorflow//tensorflow/compiler/xla:statusor",
+        "@org_tensorflow//tensorflow/compiler/xla/service:platform_util",
+    ],
+)
+
+cc_library(
+    name = "debug_macros",
+    hdrs = ["debug_macros.h"],
+    deps = [
+        ":tf_logging",
+        "@org_tensorflow//tensorflow/compiler/xla:statusor",
+        "@org_tensorflow//tensorflow/compiler/xla/service:platform_util",
+    ],
+)
+
+cc_library(
+    name = "sys_util",
+    srcs = ["sys_util.cc"],
+    hdrs = ["sys_util.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
+    name = "types",
+    hdrs = ["types.h"],
+    deps = [
+        "@com_google_absl//absl/numeric:int128",
+        "@com_google_absl//absl/types:optional",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
+    name = "util",
+    srcs = ["util.cc"],
+    hdrs = ["util.h"],
+    deps = [
+        ":types",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@com_google_absl//absl/types:span",
+        "@org_tensorflow//tensorflow/compiler/xla:statusor",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_library(
+    name = "env_vars",
+    srcs = ["env_vars.cc"],
+    hdrs = ["env_vars.h"],
+)
+
+cc_library(
+    name = "unique",
+    hdrs = ["unique.h"],
+    deps = [
+        ":debug_macros",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "multi_wait",
+    srcs = ["multi_wait.cc"],
+    hdrs = ["multi_wait.h"],
+    deps = [
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
+    name = "metrics",
+    srcs = ["metrics.cc"],
+    hdrs = ["metrics.h"],
+    deps = [
+        ":debug_macros",
+        ":sys_util",
+        ":util",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+        "@org_tensorflow//tensorflow/compiler/xla/service:platform_util",
+    ],
+)
+
+cc_library(
+    name = "thread_pool",
+    srcs = ["thread_pool.cc"],
+    hdrs = ["thread_pool.h"],
+    deps = [
+        ":metrics",
+        ":tf_logging",
+    ],
+)
+
+cc_library(
+    name = "cache",
+    hdrs = ["cache.h"],
+)
+
+cc_library(
+    name = "triggered_task",
+    srcs = ["triggered_task.cc"],
+    hdrs = ["triggered_task.h"],
+)
+
+cc_library(
+    name = "xrt_session",
+    srcs = ["xrt_session.cc"],
+    hdrs = ["xrt_session.h"],
+    deps = [
+        ":debug_macros",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@org_tensorflow//tensorflow/cc:cc_ops",
+        "@org_tensorflow//tensorflow/cc:client_session",
+        "@org_tensorflow//tensorflow/cc:scope",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
+    name = "xrt_session_cache",
+    srcs = ["xrt_session_cache.cc"],
+    hdrs = ["xrt_session_cache.h"],
+    deps = [
+        ":metrics",
+        ":sys_util",
+        ":xrt_session",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
+    name = "xla_util",
+    srcs = ["xla_util.cc"],
+    hdrs = ["xla_util.h"],
+    deps = [
+        ":metrics",
+        ":sys_util",
+        ":tf_logging",
+        ":types",
+        ":util",
+        ":xrt_session",
+        "@com_google_absl//absl/types:span",
+        "@org_tensorflow//tensorflow/compiler/xla:shape_util",
+        "@org_tensorflow//tensorflow/compiler/xla:status_macros",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+        "@org_tensorflow//tensorflow/compiler/xla/client:xla_computation",
+        "@org_tensorflow//tensorflow/compiler/xla/service:hlo_proto_cc",
+        "@org_tensorflow//tensorflow/compiler/xla/service:platform_util",
+        "@org_tensorflow//tensorflow/compiler/xla/service/spmd:spmd_partitioner",
+        "@org_tensorflow//tensorflow/core/lib/core:errors",
+    ],
+)
+
+cc_library(
+    name = "xrt_local_service",
+    srcs = ["xrt_local_service.cc"],
+    hdrs = ["xrt_local_service.h"],
+    deps = [
+        ":debug_macros",
+        ":xrt_session",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core/distributed_runtime:server_lib",
+        "@org_tensorflow//tensorflow/core/lib/core:errors",
+        "@org_tensorflow//tensorflow/core/lib/core:status",
+        "@org_tensorflow//tensorflow/core/tpu:tpu_initializer_helper",
+    ],
+)
+
+cc_library(
+    name = "nccl_distributed",
+    srcs = ["nccl_distributed.cc"],
+    hdrs = ["nccl_distributed.h"],
+    deps = [
+        ":debug_macros",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+    ],
+)
+
+cc_library(
+    name = "mesh_service",
+    srcs = ["mesh_service.cc"],
+    hdrs = ["mesh_service.h"],
+    deps = [
+        "nccl_distributed",
+        ":debug_macros",
+        ":mesh_service_proto_cc",
+        ":multi_wait",
+        ":sys_util",
+        ":thread_pool",
+        ":util",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/compiler/xla:statusor",
+    ],
+)
+
+cc_library(
+    name = "async_task",
+    hdrs = ["async_task.h"],
+    deps = [
+        ":debug_macros",
+        ":thread_pool",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "metrics_reader",
+    srcs = ["metrics_reader.cc"],
+    hdrs = ["metrics_reader.h"],
+    deps = [
+        ":computation_client",
+        ":debug_macros",
+        ":metrics",
+        ":util",
+    ],
+)
+
+cc_library(
+    name = "profiler",
+    srcs = ["profiler.cc"],
+    hdrs = ["profiler.h"],
+    deps = [
+        "@org_tensorflow//tensorflow/core/profiler/rpc:profiler_server_impl",
+    ],
+)
+
+cc_library(
+    name = "record_reader",
+    srcs = ["record_reader.cc"],
+    hdrs = ["record_reader.h"],
+    deps = [
+        ":debug_macros",
+        "@org_tensorflow//tensorflow/compiler/xla:types",
+        "@org_tensorflow//tensorflow/core/lib/core:errors",
+        "@org_tensorflow//tensorflow/core/lib/io:record_writer",
+        "@org_tensorflow//tensorflow/core/lib/strings:strcat",
+    ],
+)
+
+cc_library(
+    name = "metrics_analysis",
+    srcs = ["metrics_analysis.cc"],
+    hdrs = ["metrics_analysis.h"],
+    deps = [
+        ":computation_client",
+        ":metrics",
+        ":tf_logging",
+        ":types",
+        "@com_google_absl//absl/types:variant",
+    ],
+)
+
+cc_library(
     name = "computation_client_impl",
     srcs = [
         "computation_client.cc",

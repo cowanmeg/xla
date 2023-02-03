@@ -723,7 +723,7 @@ class TestNllLossLimitValue(XlaTestCase):
 class TestInterOpSyncTensors(XlaTestCase):
 
   @unittest.skipIf(
-      os.environ.get('PYTORCH_XLA_TESTS_SKIP'),
+      os.environ.get('PTXLA_SKIP_TESTING_DEV_FEATURES'),
       'To avoid new feature developing, disable failed PyTorch/XLA test on TPUVM'
   )
   def test_inter_op_sync(self):
@@ -1085,7 +1085,7 @@ class TestAtenXlaTensor(XlaTestCase):
     self.runAtenTest(torch.randint(10, (2, 2)), lambda x: x.pow_(x))
 
   @unittest.skipIf(
-      os.environ.get('PYTORCH_XLA_TESTS_SKIP'),
+      os.environ.get('PTXLA_SKIP_TESTING_DEV_FEATURES'),
       'To avoid new feature developing, disable failed PyTorch/XLA test on TPUVM'
   )
   def test_matmul_integer_types(self):
@@ -1103,7 +1103,7 @@ class TestAtenXlaTensor(XlaTestCase):
                      lambda x, y: torch.matmul(x, y))
 
   @unittest.skipIf(
-      os.environ.get('PYTORCH_XLA_TESTS_SKIP'),
+      os.environ.get('PTXLA_SKIP_TESTING_DEV_FEATURES'),
       'To avoid new feature developing, disable failed PyTorch/XLA test on TPUVM'
   )
   def test_addmm_integer_types(self):
@@ -1112,7 +1112,7 @@ class TestAtenXlaTensor(XlaTestCase):
                      lambda x, y, z: torch.addmm(x, y, z))
 
   @unittest.skipIf(
-      os.environ.get('PYTORCH_XLA_TESTS_SKIP'),
+      os.environ.get('PTXLA_SKIP_TESTING_DEV_FEATURES'),
       'To avoid new feature developing, disable failed PyTorch/XLA test on TPUVM'
   )
   def test_baddmm_integer_types(self):
@@ -1490,7 +1490,7 @@ class TestAtenXlaTensor(XlaTestCase):
     self.assertEqual(b, xla_b)
 
   @unittest.skipIf(
-      os.environ.get('PYTORCH_XLA_TESTS_SKIP'),
+      os.environ.get('PTXLA_SKIP_TESTING_DEV_FEATURES'),
       'To avoid new feature developing, disable failed PyTorch/XLA test on TPUVM'
   )
   def test_squeeze_nonzero(self):

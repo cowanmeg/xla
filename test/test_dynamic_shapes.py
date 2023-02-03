@@ -12,7 +12,7 @@ dev = xm.xla_device()
 class TestDynamicShapes(unittest.TestCase):
 
   @unittest.skipIf(
-      os.environ.get('PYTORCH_XLA_TESTS_SKIP'),
+      os.environ.get('PTXLA_SKIP_TESTING_DEV_FEATURES'),
       'To avoid new feature developing, disable failed PyTorch/XLA test on TPUVM'
   )
   def test_simple_expand(self):

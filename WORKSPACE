@@ -100,3 +100,25 @@ cc_library(
 """,
     path = PYTORCH_LOCAL_DIR,
 )
+
+new_local_repository(
+    name = "libtorch",
+    build_file_content = """
+cc_import(
+    name = "libtorch",
+    shared_library = "libtorch.so",
+    visibility = ["//visibility:public"],
+)
+cc_import(
+    name = "libtorch_cpu",
+    shared_library = "libtorch_cpu.so",
+    visibility = ["//visibility:public"],
+)
+cc_import(
+    name = "libtorch_python",
+    shared_library = "libtorch_python.so",
+    visibility = ["//visibility:public"],
+)
+""",
+    path = "%s/build/lib/" % PYTORCH_LOCAL_DIR,
+)

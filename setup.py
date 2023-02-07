@@ -277,17 +277,10 @@ def make_relative_rpath(path):
   else:
     return '-Wl,-rpath,$ORIGIN/' + path
 
-extra_compile_args, extra_link_args = [], []
+extra_compile_args = []
 cxx_abi = getattr(torch._C, '_GLIBCXX_USE_CXX11_ABI', None)
 if cxx_abi is not None:
-  extra_compile_args += ['-O', '-D_GLIBCXX_USE_CXX11_ABI={}'.format(int(cxx_abi))]
-if DEBUG:
-  extra_compile_args += ['-O0', '-g']
-  extra_link_args += ['-O0', '-g']
-else:
-  extra_compile_args += ['-DNDEBUG']
-
-extra_link_args += ['-lxla_computation_client']
+  extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI={}'.format(int(cxx_abi))]
 
 class BazelExtension(Extension):
   """A C/C++ extension that is defined as a Bazel BUILD target."""
@@ -317,7 +310,8 @@ class BuildBazelExtension(command.build_ext.build_ext):
 
     bazel_argv = [
         'bazel', 'build', ext.bazel_target,
-        '--compilation_mode=' + ('dbg' if self.debug else 'opt'),
+        '--compilation_mode=' + ('dbg' if DEBUG else 'opt'),
+        '--sandbox_base=/dev/shm',
         '\n'.join(['--cxxopt=%s' % opt for opt in extra_compile_args])
     ]
 

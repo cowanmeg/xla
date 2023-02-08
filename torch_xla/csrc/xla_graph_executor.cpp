@@ -78,12 +78,27 @@ auto XLAGraphExecutor::DeviceContextArena::Get() -> DeviceContextArena* {
 
 std::vector<XLATensorPtr> XLAGraphExecutor::DeviceContextArena::GetLiveTensors(
     const torch::lazy::BackendDevice* device) {
+  std::cout << "** GetLiveTensors... " << std::endl;
   std::vector<XLATensorPtr> tensors;
   auto fn = [&](DeviceContext* devctx) {
     std::lock_guard<std::mutex> lock(devctx->lock);
     for (auto& uid_wptr : devctx->tensors_data) {
       auto data =
           std::dynamic_pointer_cast<XLATensor::Data>(uid_wptr.second.lock());
+      if (data->ir_value) {
+        std::cout << "- ir_value: " << data->ir_value->ToString();
+        std::cout << ", sharded? "
+                  << (dynamic_cast<XlaNode*>(data->ir_value.node.get())
+                          ->GetSharding() != nullptr)
+                  << std::endl;
+        for (auto output : data->ir_value.node->operands()) {
+          std::cout << "- operand: " << output.node->ToString();
+          std::cout << ", sharded? "
+                    << (dynamic_cast<const XlaNode*>(output.node)
+                            ->GetSharding() != nullptr)
+                    << std::endl;
+        }
+      }
       if (data != nullptr) {
         tensors.push_back(XLATensor::Create(std::move(data)));
       }
@@ -349,6 +364,42 @@ void XLAGraphExecutor::SyncLiveTensorsGraph(
     c10::ArrayRef<std::string> devices, bool wait) {
   tensorflow::profiler::TraceMe activity(
       "SyncLiveTensorsGraph", tensorflow::profiler::TraceMeLevel::kInfo);
+  std::cout << "* SyncLiveTensorsGraph ... " << std::endl;
+
+  // std::unordered_map<XLATensor::Data*, size_t> sharded_tensors_map =
+  //     GetShardedTensors();
+  // for (const auto& it : sharded_tensors_map) {
+  //   XLATensor::Data* data = it.first;
+  //   std::cout << "- xtensor data: " << std::endl;
+  //   std::cout << "-- sharding? " << (data->sharding != nullptr) << std::endl;
+  //   std::cout << "-- unique_id: " << data->unique_id << std::endl;
+  //   std::cout << "-- tensor_data? " << data->tensor_data.has_value()
+  //             << std::endl;
+  //   std::cout << "-- data handle? " << (data->handle != nullptr) <<
+  //   std::endl; if (data->ir_value) {
+  //     std::cout << "-- ir_value: " << data->ir_value->ToString() <<
+  //     std::endl;
+  //   }
+
+  // at::Tensor tensor;
+  // if (data->tensor_data.has_value()) {
+  //   tensor = data->tensor_data.value();
+  // } else {
+  //   std::shared_ptr<XLATensor::Data> data_shared_ptr(data);
+  //   auto xtensor = XLATensor::Create(std::move(data_shared_ptr));
+  //   tensor = xtensor->ToTensor(/*detached=*/true);
+  //   auto xla_data = CreateTensorsData(
+  //       std::vector<at::Tensor>{tensor},
+  //       std::vector<XLATensor::ShardingSpecPtr>{data->sharding},
+  //       std::vector<std::string>{GetVirtualDevice().toString()})[0];
+  //   data->handle = std::move(xla_data);
+  //   data->ir_value = torchs::lazy::Value();
+  //   data->view = nullptr;
+  //   data->tensor_data = c10::nullopt;
+  // }
+  // Skip view data
+  // }
+
   auto tensors = GetLiveTensors(device);
   TF_VLOG(4) << tensors.size() << " live tensors: devices=("
              << c10::Join(",", devices) << ")";
@@ -475,6 +526,7 @@ XLAGraphExecutor::SyncTensorCollection XLAGraphExecutor::CollectSyncTensors(
   if (!unique_device) {
     return coll;
   }
+  std::cout << "CollectSyncTensors... ";
 
   std::vector<at::Tensor> at_tensors;
   std::vector<std::string> devices;
@@ -497,13 +549,15 @@ XLAGraphExecutor::SyncTensorCollection XLAGraphExecutor::CollectSyncTensors(
       torch::lazy::Value ir_value = tensors[i]->CurrentIrValue();
       if (ir_value) {
         if (ShouldSyncIrValue(ir_value)) {
+          std::cout << "* ir_value: " << ir_value->ToString() << std::endl;
           // Add only tensors which need to be synced.
           coll.hash = torch::lazy::HashCombine(coll.hash, ir_value.hash());
           coll.indices.push_back(i);
 
           // `sharding_spec()` checks sharding equality. If IR node has no
-          // sharding, then sync XLATensor sharding to the IR node. XLATensor's
-          // sharding takes the precedence as the source of the truth.
+          // sharding, then sync XLATensor sharding to the IR node.
+          // XLATensor's sharding takes the precedence as the source of the
+          // truth.
           XLATensor::ShardingSpecPtr sharding = tensors[i]->sharding_spec();
           if (sharding) {
             dynamic_cast<XlaNode*>(ir_value.node.get())
@@ -528,11 +582,12 @@ XLAGraphExecutor::SyncTensorCollection XLAGraphExecutor::CollectSyncTensors(
       coll.hash,
       xla::ComputationClient::Get()->GetResourceDomain(coll.device.toString()));
   if (!at_tensors.empty()) {
+    std::cout << "* at_tensors not empty?? ";
     TORCH_LAZY_COUNTER("SyncTensorsToData", at_tensors.size());
     // Create data handles with shardings. If a tensor has a
     // sharding annotation, then a BackendDataPtr with PjRtShardedData is
-    // returned; if there is no sharding annotation, then a BackendDataPtr with
-    // PjRtData is returned.
+    // returned; if there is no sharding annotation, then a BackendDataPtr
+    // with PjRtData is returned.
     std::vector<torch::lazy::BackendDataPtr> handles =
         CreateTensorsData(at_tensors, shardings, devices);
     for (size_t i = 0; i < handles.size(); ++i) {
@@ -668,13 +723,12 @@ std::vector<at::Tensor> XLAGraphExecutor::GetTensorsFused(
       async != nullptr ? async->tensors_data
                        : absl::Span<const torch::lazy::BackendDataPtr>());
 
-  // Execution is async in PJRT, so TransferFromServer may block until execution
-  // completes. Release the GIL so other threads can proceed and unblock any
-  // collective computations.
-  // HACK: This method may be called outside of python (mainly in C++ tests) or
-  // when the GIL is already released, so we must check both cases here. If
-  // possible, prefer to release the GIL in the python bindings before copying
-  // this pattern.
+  // Execution is async in PJRT, so TransferFromServer may block until
+  // execution completes. Release the GIL so other threads can proceed and
+  // unblock any collective computations. HACK: This method may be called
+  // outside of python (mainly in C++ tests) or when the GIL is already
+  // released, so we must check both cases here. If possible, prefer to
+  // release the GIL in the python bindings before copying this pattern.
   PyThreadState* save = nullptr;
   // TODO(wcromar): Remove this setting when we are more confident
   static const bool release_gil =
@@ -839,6 +893,8 @@ void XLAGraphExecutor::ExtractIRAndPrepareXlaData_(
       "ExtractIRAndPrepareXlaData_", tensorflow::profiler::TraceMeLevel::kInfo);
   ir_values.reserve(indices.size());
   tensor_data_vec.reserve(indices.size());
+  std::cout << "** ExtractIRAndPrepareXlaData_, indices: "
+            << absl::StrJoin(indices, ", ") << std::endl;
   for (auto index : indices) {
     XLATensorPtr& tensor = (*tensors)[index];
     torch::lazy::Value ir_value = tensor->CurrentIrValue();
@@ -918,7 +974,8 @@ XLAGraphExecutor::ScheduleSyncTensorsGraph(
         results = WrapXlaData(xla::ComputationClient::Get()->ExecuteReplicated(
             *async->cached_computation->computation->client_computation(),
             device_arguments, devices,
-            execute_options)[0]);  // TODO(yeounoh) assumes replicated outputs
+            execute_options)[0]);  // TODO(yeounoh) assumes replicated
+                                   // outputs
         TF_VLOG(3) << "Executing IR graph hash "
                    << torch::lazy::HashToString(hash)
                    << " on devices: " << absl::StrJoin(devices, ",")
@@ -943,14 +1000,15 @@ XLAGraphExecutor::ScheduleSyncTensorsGraph(
       }
     } catch (...) {
       // There are two paths of discovery of an exception happening on an
-      // asynchronous task. One happens if the creator of the asynchronous task
-      // explicitly waits for completion, in which case the exception will be
-      // thrown from the Wait() API. Re-throwing the exception below makes sure
-      // this will be captured by the completer function created below, and
-      // surfaced by the Wait() API. But we also need to surface the exception
-      // even in case the caller does not wait, and that is accomplished by
-      // setting the unlockers status. In that case the exception will be
-      // surfaced when the user tries to acquire the device locks the next time.
+      // asynchronous task. One happens if the creator of the asynchronous
+      // task explicitly waits for completion, in which case the exception
+      // will be thrown from the Wait() API. Re-throwing the exception below
+      // makes sure this will be captured by the completer function created
+      // below, and surfaced by the Wait() API. But we also need to surface
+      // the exception even in case the caller does not wait, and that is
+      // accomplished by setting the unlockers status. In that case the
+      // exception will be surfaced when the user tries to acquire the device
+      // locks the next time.
       for (auto& unlocker : async->unlocker) {
         unlocker.SetStatus(std::current_exception());
       }
@@ -1025,8 +1083,8 @@ XLAGraphExecutor::BuildInputOutputAliases(
   std::unordered_map<int64_t, size_t> output_tensor_id_map;
   std::vector<std::pair<int64_t, int64_t>> input_output_alias_pair;
   // tensors[indices] represent all tensors that needs to be updated after
-  // the execution. We can only alias the current buffer of these tensors since
-  // those buffers are no longer needed after execution.
+  // the execution. We can only alias the current buffer of these tensors
+  // since those buffers are no longer needed after execution.
   for (size_t i = 0; i < indices.size(); ++i) {
     size_t tensor_index = indices[i];
     int64_t tensor_id = tensors[tensor_index]->GetUniqueId();
@@ -1048,9 +1106,9 @@ XLAGraphExecutor::BuildInputOutputAliases(
         xla::XlaOp root = lowering_ctx->GetResult(output_index);
         const xla::Shape& root_shape = XlaHelpers::ShapeOfXlaOp(root);
         auto parameter_data_shape = UnwrapXlaData(parameters_data[i])->shape();
-        // Need to check whether existing buffer and the new value has the same
-        // shape and the existing buffer has not been aliased before aliasing
-        // the existing and new buffer.
+        // Need to check whether existing buffer and the new value has the
+        // same shape and the existing buffer has not been aliased before
+        // aliasing the existing and new buffer.
         if (parameter_data_shape == root_shape && alias_map[output_index] < 0) {
           // parameter is not a tuple so param_index will always be {}
           lowering_ctx->builder()->SetUpAlias(
@@ -1113,11 +1171,11 @@ XLAGraphExecutor::CompilationResult XLAGraphExecutor::Compile(
     //   print(A)
     //   print(A)
     // The first print will update DEVICE_DATA' with DEVICE_DATA+0.4, and the
-    // second print will again update DEVICE_DATA" with DEVICE_DATA'+0.4, which
-    // will lead to incorrect results.
-    // We cannot normally turn A's state into DEVICE_DATA, as if any of the
-    // sources is a view, this will not lead to correct results (as A's value
-    // taken at different times need to reflect view source changes):
+    // second print will again update DEVICE_DATA" with DEVICE_DATA'+0.4,
+    // which will lead to incorrect results. We cannot normally turn A's state
+    // into DEVICE_DATA, as if any of the sources is a view, this will not
+    // lead to correct results (as A's value taken at different times need to
+    // reflect view source changes):
     //   1. Tensor A = some_graph_with_view_source(V)
     //   2. print(A)
     //   3. V += 1

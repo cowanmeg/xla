@@ -1686,6 +1686,7 @@ XLATensorPtr mish(const XLATensorPtr& input) {
 }
 
 XLATensorPtr mm(const XLATensorPtr& input, const XLATensorPtr& weight) {
+  std::cout << "* mm ... " << std::endl;
   return input->CreateFrom(Dot(input->GetIrValue(), weight->GetIrValue()));
 }
 
@@ -2150,6 +2151,7 @@ XLATensorPtr rsub(const XLATensorPtr& input, const at::Scalar& other,
 }
 
 void copy_(XLATensorPtr& input, XLATensorPtr& src) {
+  std::cout << "*** copy_ ... " << std::endl;
   if (input->GetDevice() == src->GetDevice()) {
     torch::lazy::Value copy_value;
     if (input->dtype() == src->dtype()) {
@@ -2474,6 +2476,7 @@ XLATensorPtr threshold_backward(const XLATensorPtr& grad_output,
 XLATensorPtr to(XLATensorPtr& input,
                 c10::optional<torch::lazy::BackendDevice> device,
                 c10::optional<at::ScalarType> scalar_type) {
+  std::cout << "** to... " << std::endl;
   if (!device) {
     device = input->GetDevice();
   }

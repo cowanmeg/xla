@@ -58,6 +58,7 @@ resource "google_project_iam_member" "cloud-build-scheduler-permission" {
   project = google_service_account.cloud-build-trigger-scheduler.project
   role    = "roles/cloudbuild.builds.editor"
   member  = "serviceAccount:${google_service_account.cloud-build-trigger-scheduler.email}"
+}
 
 resource "google_cloudbuild_trigger" "tpu-test-trigger" {
   location = "global"

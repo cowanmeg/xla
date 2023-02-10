@@ -65,13 +65,13 @@ The following pre-built docker images are available. For running dockers, check 
 | Version | Cloud TPU VMs Docker |
 | --- | ----------- |
 1.13 | `gcr.io/tpu-pytorch/xla:r1.13_3.8_tpuvm` |
-1.12 | `gcr.io/tpu-pytorch/xla:r1.12_3.8_tpuvm` |
+1.12 | `gcr.io/tpu-pytorch/xla:r1.12_3.8_tpuvm` | 
 nightly | `gcr.io/tpu-pytorch/xla:nightly_3.8_tpuvm` |
 nightly at date | `gcr.io/tpu-pytorch/xla:nightly_3.8_YYYYMMDD` |
 
 <br/>
 
-| Version | GPU CUDA 11.2 + Python 3.7 Docker |
+| Version | GPU CUDA 11.2 + Python 3.7 Docker | 
 | --- | ----------- |
 1.13 | `gcr.io/tpu-pytorch/xla:r1.13_3.7_cuda_11.2` |
 1.12 | `gcr.io/tpu-pytorch/xla:r1.12_3.7_cuda_11.2` |
@@ -171,4 +171,3 @@ See the [contribution guide](CONTRIBUTING.md).
 
 ## Disclaimer
 This repository is jointly operated and maintained by Google, Facebook and a number of individual contributors listed in the [CONTRIBUTORS](https://github.com/pytorch/xla/graphs/contributors) file. For questions directed at Facebook, please send an email to opensource@fb.com. For questions directed at Google, please send an email to pytorch-xla@googlegroups.com. For all other questions, please open up an issue in this repository [here](https://github.com/pytorch/xla/issues).
-test

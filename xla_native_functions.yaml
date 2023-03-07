@@ -51,6 +51,7 @@ full_codegen:
   - leaky_relu
   - le.Scalar
   - le.Tensor
+  - linalg_vector_norm
   - logdet
   - logical_and
   - logical_not
@@ -203,13 +204,6 @@ supported:
   - leaky_relu_backward
   - lerp.Scalar
   - lerp.Tensor
-<<<<<<< HEAD
-  - lift
-  - lift_fresh
-  - linalg_inv_ex
-=======
-  - linalg_vector_norm
->>>>>>> Initial lowering for linalg vector norm
   - linspace
   - log
   - log1p

@@ -326,12 +326,24 @@ xla::XlaOp BuildProd(xla::XlaOp input, absl::Span<const int64_t> dimensions,
   return CreateProduct(input, dimensions, keep_reduced_dimensions);
 }
 
-xla::XlaOp BuildLinalgVectorNorm(xla::XlaOp input, 
+xla::XlaOp BuildLinalgVectorNorm(xla::XlaOp input, xla::XlaOp ord,
                                  absl::Span<const int64_t> dimensions,
                                  bool keep_reduced_dimensions) {
-  return CreateSummation(input, dimensions, keep_reduced_dimensions,
-                         /*scale=*/false)
-      .result;
+
+  xla::XlaOp abs_input = xla::Abs(input);
+  // // ord == float.inf max(abs(input))
+  // return BuildMaxInDims(abs_input, dimensions, keep_reduced_dimensions);
+
+  // // ord == -float.inf min(abs(input))
+  // return BuildMinInDims(abs_input, dimensions, keep_reduced_dimensions);
+
+  // sum(abs(input)^ord) ^ (1/ord)
+  const xla::Shape& input_shape = XlaHelpers::ShapeOfXlaOp(input);
+  xla::XlaOp one = xla::One(input.builder(), input_shape.element_type());
+  xla::XlaOp pows = xla::Pow(abs_input, ord);
+  xla::XlaOp sums = CreateSummation(pows, dimensions, keep_reduced_dimensions,
+                                    /*scale=*/false).result;
+  return xla::Pow(sums, (one / ord));
 }
 
 xla::XlaOp BuildMaxInDim(xla::XlaOp input, int64_t dim,

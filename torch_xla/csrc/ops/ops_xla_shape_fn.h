@@ -168,6 +168,10 @@ xla::Shape LeakyReluBackwardOutputShape(
     const torch::lazy::Value& grad_output, const torch::lazy::Value& input,
     const torch::lazy::Value& negative_slope, bool self_is_result);
 
+xla::Shape LinalgVectorNormOutputShape(
+    const torch::lazy::Value& self, const torch::lazy::Value& ord, 
+    const c10::optional<::std::vector<int64_t>>& dim, bool keepdim);
+
 xla::Shape LeScalarOutputShape(const torch::lazy::Value& self,
                                const torch::lazy::Value& other);
 

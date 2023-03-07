@@ -84,7 +84,7 @@ xla::XlaOp BuildProd(xla::XlaOp input, absl::Span<const int64_t> dimensions,
 // Builds the linalg vector norm of all values by reducing all the dimensions 
 // listed in dimensions. If keep_reduced_dimensions is true, the reduced 
 // dimensions will be retained, with value 1.
-xla::XlaOp BuildLinalgVectorNorm(xla::XlaOp input, 
+xla::XlaOp BuildLinalgVectorNorm(xla::XlaOp input, xla::XlaOp ord, 
                                  absl::Span<const int64_t> dimensions,
                                  bool keep_reduced_dimensions);
 

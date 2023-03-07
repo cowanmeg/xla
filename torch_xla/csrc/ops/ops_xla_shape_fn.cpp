@@ -515,6 +515,25 @@ xla::Shape LeTensorOutputShape(const torch::lazy::Value& self,
   return LeScalarOutputShape(self, other);
 }
 
+
+xla::Shape LinalgVectorNormOutputShape(const torch::lazy::Value& self, 
+                                       const torch::lazy::Value& ord, 
+                                       const c10::optional<::std::vector<int64_t>>& dim,
+                                       bool keepdim) {
+  auto lower_for_shape_fn =
+      [&](absl::Span<const xla::XlaOp> operands) -> xla::XlaOp {
+    absl::Span<const int64_t> dimensions;
+    if (dim.has_value()) {
+      dimensions = dim.value();
+    } else {
+      dimensions = {std::move(XlaHelpers::ShapeOfXlaOp(operands[0]).rank())};
+    }
+    return BuildLinalgVectorNorm(operands[0], operands[1],
+                                 dimensions, keepdim);
+  };
+  return InferOutputShape({GetXlaShape(self)}, lower_for_shape_fn);
+}
+
 xla::Shape LtScalarOutputShape(const torch::lazy::Value& self,
                                const torch::lazy::Value& other) {
   auto lower_for_shape_fn =

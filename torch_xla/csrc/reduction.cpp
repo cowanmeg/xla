@@ -331,18 +331,26 @@ xla::XlaOp BuildLinalgVectorNorm(xla::XlaOp input, xla::XlaOp ord,
                                  bool keep_reduced_dimensions) {
 
   xla::XlaOp abs_input = xla::Abs(input);
-  // // ord == float.inf max(abs(input))
+  // ord == float.inf max(abs(input))
   // return BuildMaxInDims(abs_input, dimensions, keep_reduced_dimensions);
 
-  // // ord == -float.inf min(abs(input))
+  // ord == -float.inf min(abs(input))
   // return BuildMinInDims(abs_input, dimensions, keep_reduced_dimensions);
 
-  // sum(abs(input)^ord) ^ (1/ord)
-  const xla::Shape& input_shape = XlaHelpers::ShapeOfXlaOp(input);
-  xla::XlaOp one = xla::One(input.builder(), input_shape.element_type());
+  // ord == 0
+  // const xla::Shape& input_shape = XlaHelpers::ShapeOfXlaOp(input);
+  // xla::XlaOp ne_bool = xla::Ne(input, xla::Zero(input.builder(), input_shape.element_type()));
+  // xla::XlaOp ne = xla::ConvertElementType(ne_bool, input_shape.element_type());
+  // return CreateSummation(ne, dimensions, keep_reduced_dimensions,
+  //                                   /*scale=*/false).result;
+
+  // else: sum(abs(input)^ord) ^ (1/ord)
+  const xla::Shape& ord_shape = XlaHelpers::ShapeOfXlaOp(ord);
+  std::cout << "Shape of ord " << ord_shape << std::endl;
   xla::XlaOp pows = xla::Pow(abs_input, ord);
   xla::XlaOp sums = CreateSummation(pows, dimensions, keep_reduced_dimensions,
                                     /*scale=*/false).result;
+  xla::XlaOp one = xla::One(ord.builder(), ord_shape.element_type());
   return xla::Pow(sums, (one / ord));
 }
 

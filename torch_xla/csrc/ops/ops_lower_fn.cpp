@@ -1,3 +1,4 @@
+#include <iostream>
 #include <torch_xla/csrc/generated/LazyIr.h>
 
 #include "tensorflow/compiler/xla/client/lib/logdet.h"
@@ -422,15 +423,22 @@ torch_xla::XlaOpVector LeakyReluBackward::Lower(LoweringContext* loctx) const {
 torch_xla::XlaOpVector LinalgVectorNorm::Lower(LoweringContext* loctx) const {
   xla::XlaOp xla_input = loctx->GetOutputOp(operand(0));
   xla::XlaOp xla_ord = loctx->GetOutputOp(operand(1));
-  absl::Span<const int64_t> dimensions;
   if (dim.has_value()) {
-    dimensions = dim.value();
-  } else {
-    dimensions = {std::move(XlaHelpers::ShapeOfXlaOp(xla_input).rank())};
-  }
-  return ReturnOp(
-      BuildLinalgVectorNorm(CastToScalarType(xla_input, dtype), xla_ord, dimensions, keepdim),
+    return ReturnOp(
+      BuildLinalgVectorNorm(CastToScalarType(xla_input, dtype), xla_ord, dim.value(), keepdim),
       loctx);
+  } else {
+    std::vector<int64_t> bdim(XlaHelpers::ShapeOfXlaOp(xla_input).rank());
+    std::iota(bdim.begin(), bdim.end(), int64_t(0));
+    absl::Span<const int64_t> dimensions = absl::Span<const int64_t>(bdim);
+    for (auto i : dimensions)
+      std::cout << i << " ";
+    std::cout << std::endl;
+    return ReturnOp(
+      BuildLinalgVectorNorm(CastToScalarType(xla_input, dtype), xla_ord, bdim, keepdim),
+      loctx);
+  }
+  
 }
 
 torch_xla::XlaOpVector Logdet::Lower(LoweringContext* loctx) const {

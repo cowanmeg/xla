@@ -204,6 +204,9 @@ supported:
   - leaky_relu_backward
   - lerp.Scalar
   - lerp.Tensor
+  - lift
+  - lift_fresh
+  - linalg_inv_ex
   - linspace
   - log
   - log1p

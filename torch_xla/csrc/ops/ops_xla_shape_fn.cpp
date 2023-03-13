@@ -524,14 +524,17 @@ xla::Shape LinalgVectorNormOutputShape(const torch::lazy::Value& self,
       [&](absl::Span<const xla::XlaOp> operands) -> xla::XlaOp {
     absl::Span<const int64_t> dimensions;
     if (dim.has_value()) {
-      dimensions = dim.value();
+      return BuildLinalgVectorNorm(operands[0], operands[1],
+                                   dim.value(), keepdim);
     } else {
-      dimensions = {std::move(XlaHelpers::ShapeOfXlaOp(operands[0]).rank())};
+      std::vector<int64_t> bdim(XlaHelpers::ShapeOfXlaOp(operands[0]).rank());
+      std::iota(bdim.begin(), bdim.end(), int64_t(0));
+      return BuildLinalgVectorNorm(operands[0], operands[1],
+                                   bdim, keepdim);
     }
-    return BuildLinalgVectorNorm(operands[0], operands[1],
-                                 dimensions, keepdim);
   };
-  return InferOutputShape({GetXlaShape(self)}, lower_for_shape_fn);
+  
+  return InferOutputShape({GetXlaShape(self), GetXlaShape(ord)}, lower_for_shape_fn);
 }
 
 xla::Shape LtScalarOutputShape(const torch::lazy::Value& self,

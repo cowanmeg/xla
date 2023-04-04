@@ -542,6 +542,22 @@ torch_xla::XlaOpVector Repeat::Lower(LoweringContext* loctx) const {
   return ReturnOp(output, loctx);
 }
 
+torch_xla::XlaOpVector RepeatInterleaveSelfTensor::Lower(LoweringContext* loctx) const {
+  std::cout << "RepeatInterleaveSelfTensor ops_lower_fn.cpp" << std::endl;
+  xla::XlaOp self = loctx->GetOutputOp(operand(0));
+  xla::XlaOp repeats = loctx->GetOutputOp(operand(1));
+  int64_t dim_val;
+  if (dim.has_value()) {
+    dim_val = dim.value();
+  } else {
+    dim_val = 0;
+    xla::Shape shape;
+    self = XlaHelpers::Flatten(self, &shape);
+  }
+  xla::XlaOp output = BuildRepeatInterleave(self, repeats, dim_val);
+  return ReturnOp(output, loctx);
+}
+
 torch_xla::XlaOpVector Round::Lower(LoweringContext* loctx) const {
   xla::XlaOp xla_input = loctx->GetOutputOp(operand(0));
   if (xla::primitive_util::IsIntegralType(XlaHelpers::TypeOfXlaOp(xla_input))) {

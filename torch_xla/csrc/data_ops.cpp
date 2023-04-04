@@ -209,6 +209,25 @@ xla::XlaOp BuildRepeat(xla::XlaOp input, absl::Span<const int64_t> repeats) {
   return repeated;
 }
 
+xla::XlaOp BuildRepeatInterleave(xla::XlaOp input, xla::XlaOp repeats, int64_t dim) {
+  std::cout << "BuildRepeatInterleave data_ops.cpp" << std::endl;
+  const auto input_sizes = XlaHelpers::SizesOfXlaOp(input);
+  // std::vector<int64_t> split_sizes(input_sizes.at(dim));
+  std::cout << "Input size at dim " << input_sizes.at(dim) << std::endl;
+  std::vector<int64_t> split_sizes = torch::lazy::Iota<int64_t>(input_sizes.at(dim));
+  // std::iota(std::begin(split_sizes), std::end(split_sizes), 0);
+  for (auto i : split_sizes)
+    std::cout << "Split size " << i << std::endl;
+  std::vector<xla::XlaOp> slices = BuildSplit(input, split_sizes, dim);
+  for(auto slice: slices) {
+    // TODO: how to read repeats?
+    for (auto r = 0; r < 2; r++)
+      slices.push_back(slice);
+  }
+  return BuildStack(slices, dim);
+}
+
+
 size_t ComputeSplitCount(int64_t dim_size,
                          absl::Span<const int64_t> split_sizes) {
   size_t count = 0;

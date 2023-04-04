@@ -67,6 +67,7 @@ full_codegen:
   - reciprocal
   - relu
   - repeat
+  - repeat_interleave.self_Tensor
   - round
   - rsqrt
   - selu

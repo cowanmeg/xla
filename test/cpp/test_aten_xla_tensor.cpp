@@ -4762,6 +4762,45 @@ TEST_F(AtenXlaTensorTest, TestRepeat) {
   }
 }
 
+TEST_F(AtenXlaTensorTest, TestRepeatInterleave) {
+  int64_t repeats = 3;
+  std::vector<std::vector<int64_t>> input_size_list = {{3}, {2, 4}};
+  for (auto i = 0; i < input_size_list.size(); i++) {
+    auto input_size = input_size_list[i];
+    torch::Tensor input =
+          torch::rand(input_size, torch::TensorOptions(torch::kFloat));
+    torch::Tensor output = input.repeat_interleave(repeats);
+    ForEachDevice([&](const torch::Device& device) {
+      torch::Tensor xla_input = CopyToDevice(input, device);
+      torch::Tensor xla_output = xla_input.repeat_interleave(repeats);
+      AllClose(output, xla_output);
+    });
+  }
+  ExpectCounterNotChanged("aten::.*", cpp_test::GetIgnoredCounters()); 
+  ExpectCounterChanged("xla::repeat_interleave", cpp_test::GetIgnoredCounters());
+}
+
+TEST_F(AtenXlaTensorTest, TestRepeatInterleaveDim) {
+  std::vector<std::vector<int64_t>> repeats_list = {{2}, {2, 3}};
+  std::vector<std::vector<int64_t>> input_size_list = {{3}, {2, 4}};
+  std::vector<int64_t> dim_list = {0, 1};
+  for (auto i = 0; i < dim_list.size(); i++) {
+    auto input_size = input_size_list[i];
+    auto dim = dim_list[i];
+    torch::Tensor input =
+          torch::rand(input_size, torch::TensorOptions(torch::kFloat));
+    torch::Tensor repeats = torch::tensor(repeats_list[i]);
+    torch::Tensor output = input.repeat_interleave(repeats, dim);
+    ForEachDevice([&](const torch::Device& device) {
+      torch::Tensor xla_input = CopyToDevice(input, device);
+      torch::Tensor xla_output = xla_input.repeat_interleave(repeats, dim);
+      AllClose(output, xla_output);
+    });
+  }
+  ExpectCounterNotChanged("aten::.*", cpp_test::GetIgnoredCounters()); 
+  ExpectCounterChanged("xla::repeat_interleave", cpp_test::GetIgnoredCounters());
+}
+
 TEST_F(AtenXlaTensorTest, TestGather) {
   torch::Tensor a = torch::rand({3, 3}, torch::TensorOptions(torch::kFloat));
   torch::Tensor b = torch::empty({3, 3}, torch::TensorOptions(torch::kLong));

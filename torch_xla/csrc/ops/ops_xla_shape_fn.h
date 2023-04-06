@@ -218,10 +218,7 @@ xla::Shape ReluOutputShape(const torch::lazy::Value& input);
 xla::Shape RepeatOutputShape(const torch::lazy::Value& input,
                              absl::Span<const int64_t> repeats);
 
-xla::Shape RepeatInterleaveSelfTensorOutputShape(
-    const torch::lazy::Value& input,
-    const torch::lazy::Value& repeats,
-    const c10::optional<int64_t>& dim);
+xla::Shape RepeatInterleaveTensorOutputShape(const torch::lazy::Value& repeats);
 
 xla::Shape RoundOutputShape(const torch::lazy::Value& input);
 

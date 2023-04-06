@@ -649,28 +649,6 @@ xla::Shape RepeatOutputShape(const torch::lazy::Value& input,
   return InferOutputShape({GetXlaShape(input)}, lower_for_shape_fn);
 }
 
-xla::Shape RepeatInterleaveSelfTensorOutputShape(
-    const torch::lazy::Value& input,
-    const torch::lazy::Value& repeats,
-    const c10::optional<int64_t>& dim) {
-  std::cout << "RepeatInterleaveSlefTensorOutputShape ops_xla_shape_fn.cpp" << std::endl;
-  auto lower_for_shape_fn = 
-      [&](absl::Span<const xla::XlaOp> operands) -> xla::XlaOp {
-    int64_t dim_val;
-    xla::XlaOp self;
-    if (dim.has_value()) {
-      dim_val = dim.value();
-      self = operands[0];
-    } else {
-      dim_val = 0;
-      xla::Shape shape;
-      self = XlaHelpers::Flatten(operands[0], &shape);
-    }
-    return BuildRepeatInterleave(self, operands[1], dim_val);
-  };
-  return InferOutputShape({GetXlaShape(input)}, lower_for_shape_fn);
-}
-
 xla::Shape RoundOutputShape(const torch::lazy::Value& input) {
   return GetXlaShape(input);
 }

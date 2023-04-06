@@ -667,6 +667,10 @@ XLATensorPtr reflection_pad2d_backward(const XLATensorPtr& grad_output,
 XLATensorPtr remainder(const XLATensorPtr& input, const XLATensorPtr& other);
 XLATensorPtr remainder(const XLATensorPtr& input, const at::Scalar& other);
 
+XLATensorPtr repeat_interleave(const XLATensorPtr& input, const XLATensorPtr& repeats,
+                               c10::optional<int64_t> dim, 
+                               c10::optional<int64_t> output_size);
+
 XLATensorPtr replication_pad1d(const XLATensorPtr& input,
                                std::vector<int64_t> padding);
 XLATensorPtr replication_pad1d_backward(const XLATensorPtr& grad_output,

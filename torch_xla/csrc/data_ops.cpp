@@ -176,8 +176,7 @@ xla::XlaOp BuildStack(absl::Span<const xla::XlaOp> inputs, int64_t dim) {
     reshaped_inputs.push_back(
         XlaHelpers::DynamicReshape(inputs[i], input_size));
   }
-  xla::XlaOp ret = xla::ConcatInDim(inputs[0].builder(), reshaped_inputs, dim);
-  return ret;
+  return xla::ConcatInDim(inputs[0].builder(), reshaped_inputs, dim);
 }
 
 xla::XlaOp BuildCat(absl::Span<const xla::XlaOp> inputs, int64_t dim,

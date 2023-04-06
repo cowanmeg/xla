@@ -62,9 +62,6 @@ xla::XlaOp BuildCat(absl::Span<const xla::XlaOp> inputs, int64_t dim,
 // Repeats the input tensor along each dimension by the given number of repeats.
 xla::XlaOp BuildRepeat(xla::XlaOp input, absl::Span<const int64_t> repeats);
 
-// TODO: comment
-xla::XlaOp BuildRepeatInterleave(xla::XlaOp input, xla::XlaOp repeats, int64_t dim);
-
 // Computes the number of splits with a dimension size and the split sizes.
 size_t ComputeSplitCount(int64_t dim_size,
                          absl::Span<const int64_t> split_sizes);

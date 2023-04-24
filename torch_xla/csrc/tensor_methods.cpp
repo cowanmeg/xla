@@ -2099,13 +2099,11 @@ XLATensorPtr remainder(const XLATensorPtr& input, const at::Scalar& other) {
   return input->CreateFrom(Remainder(input->GetIrValue(), constant));
 }
 
-
 XLATensorPtr repeat_interleave(const XLATensorPtr& input, int64_t repeats,
-                              c10::optional<int64_t> dim, 
-                              c10::optional<int64_t> output_size) {
-  return input->CreateFrom(torch::lazy::MakeNode<RepeatInterleave>(input->GetIrValue(), 
-                                                                   repeats, 
-                                                                   dim, output_size));
+                               c10::optional<int64_t> dim,
+                               c10::optional<int64_t> output_size) {
+  return input->CreateFrom(torch::lazy::MakeNode<RepeatInterleave>(
+      input->GetIrValue(), repeats, dim, output_size));
 }
 
 XLATensorPtr replication_pad1d(const XLATensorPtr& input,

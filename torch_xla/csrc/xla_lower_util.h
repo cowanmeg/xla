@@ -140,8 +140,7 @@ xla::XlaOp BuildAddcmul(xla::XlaOp input, xla::XlaOp t1, xla::XlaOp t2,
 xla::XlaOp BuildCdistForward(xla::XlaOp x1, xla::XlaOp x2, xla::XlaOp p,
                              bool use_hamming, bool use_chebyshev);
 
-xla::XlaOp BuildRepeatInterleave(xla::XlaOp input, int64_t repeats, 
+xla::XlaOp BuildRepeatInterleave(xla::XlaOp input, int64_t repeats,
                                  int64_t dim);
-
 
 }  // namespace torch_xla

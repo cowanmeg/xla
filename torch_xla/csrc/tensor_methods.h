@@ -675,7 +675,7 @@ XLATensorPtr remainder(const XLATensorPtr& input, const XLATensorPtr& other);
 XLATensorPtr remainder(const XLATensorPtr& input, const at::Scalar& other);
 
 XLATensorPtr repeat_interleave(const XLATensorPtr& input, int64_t repeats,
-                               c10::optional<int64_t> dim, 
+                               c10::optional<int64_t> dim,
                                c10::optional<int64_t> output_size);
 
 XLATensorPtr replication_pad1d(const XLATensorPtr& input,

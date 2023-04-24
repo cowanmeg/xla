@@ -14,7 +14,7 @@
 namespace torch_xla {
 namespace {
 
-xla::XlaOp LowerRepeatInterleave(xla::XlaOp input, xla::XlaOp repeat,
+xla::XlaOp LowerRepeatInterleave(xla::XlaOp input, int64_t repeats,
                             c10::optional<int64_t> dim,
                             c10::optional<int64_t> output_size) {
   int64_t dim_val;
@@ -25,16 +25,16 @@ xla::XlaOp LowerRepeatInterleave(xla::XlaOp input, xla::XlaOp repeat,
     xla::Shape shape;
     input = XlaHelpers::Flatten(input, &shape);
   }
-  return BuildRepeatInterleave(input, repeat, dim_val);
+  return BuildRepeatInterleave(input, repeats, dim_val);
 }
 
 xla::Shape NodeOutputShape(const torch::lazy::Value& input,
-                           const torch::lazy::Value& repeat,
+                           int64_t repeats,
                            c10::optional<int64_t> dim,
                            c10::optional<int64_t> output_size) {
   auto lower_for_shape_fn =
       [&](absl::Span<const xla::XlaOp> operands) -> xla::XlaOp {
-    return LowerRepeatInterleave(operands[0], operands[1], dim, output_size);
+    return LowerRepeatInterleave(operands[0], repeats, dim, output_size);
   };
   return InferOutputShape({GetXlaShape(input)}, lower_for_shape_fn);
 }
@@ -42,34 +42,35 @@ xla::Shape NodeOutputShape(const torch::lazy::Value& input,
 }  // namespace
 
 RepeatInterleave::RepeatInterleave(const torch::lazy::Value& input, 
-                                   const torch::lazy::Value& repeats,
+                                   int64_t repeats,
                                    c10::optional<int64_t> dim, 
                                    c10::optional<int64_t> output_size)
-    : XlaNode(torch::lazy::OpKind(at::aten::repeat_interleave), {input, repeats},
+    : XlaNode(torch::lazy::OpKind(at::aten::repeat_interleave), {input},
               [&]() {
                 return NodeOutputShape(input, repeats, dim, output_size);
               },
               /*num_outputs=*/1,
-              torch::lazy::MHash(torch::lazy::OptionalOr<int64_t>(dim, 0),
+              torch::lazy::MHash(repeats,
+                                 torch::lazy::OptionalOr<int64_t>(dim, 0),
                                  torch::lazy::OptionalOr<int64_t>(output_size, -1))),
       dim_(dim),
       output_size_(output_size) {}
 
 torch::lazy::NodePtr RepeatInterleave::Clone(torch::lazy::OpList operands) const {
-  return torch::lazy::MakeNode<RepeatInterleave>(operands.at(0), operands.at(1),
+  return torch::lazy::MakeNode<RepeatInterleave>(operands.at(0), repeats_,
                                                  dim_, output_size_);
 }
 
 XlaOpVector RepeatInterleave::Lower(LoweringContext* loctx) const {
   xla::XlaOp input = loctx->GetOutputOp(operand(0));
-  xla::XlaOp repeats = loctx->GetOutputOp(operand(1));
   return ReturnOp(
-      LowerRepeatInterleave(input, repeats, dim_, output_size_), loctx);
+      LowerRepeatInterleave(input, repeats_, dim_, output_size_), loctx);
 }
 
 std::string RepeatInterleave::ToString() const {
   std::stringstream ss;
   ss << XlaNode::ToString();
+  ss << ", repeats=" << repeats_;
   if (dim_.has_value()) {
     ss << ", dim=" << dim_.value();
   } else {

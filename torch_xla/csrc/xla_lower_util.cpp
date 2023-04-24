@@ -1126,17 +1126,17 @@ xla::XlaOp BuildCdistForward(xla::XlaOp x1, xla::XlaOp x2, xla::XlaOp p,
   }
 }
 
-xla::XlaOp BuildRepeatInterleave(xla::XlaOp input, xla::XlaOp repeats, int64_t dim) {
+xla::XlaOp BuildRepeatInterleave(xla::XlaOp input, int64_t repeats, int64_t dim) {
   auto input_sizes = XlaHelpers::SizesOfXlaOp(input);
   std::vector<xla::XlaOp> repeated_slices;
   for (auto idx = 0; idx < input_sizes.at(dim); idx++) {
     xla::XlaOp slice = xla::SliceInDim(input, idx, idx+1, 1, dim);
-    // TODO: Read repeat from repeats - hardcoded to 2 for now. 
-    for (auto repeat = 0; repeat < 2; repeat++)
+    for (auto r = 0; r < repeats; r++)
       repeated_slices.push_back(slice);
   }
   return xla::ConcatInDim(repeated_slices[0].builder(), repeated_slices, dim);
 } 
+
 xla::XlaOp BuildMultinomial(xla::XlaOp input, int64_t num_samples,
                             bool replacement, xla::XlaOp seed) {
   const xla::Shape& input_shape = XlaHelpers::ShapeOfXlaOp(input);

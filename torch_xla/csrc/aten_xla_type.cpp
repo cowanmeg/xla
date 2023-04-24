@@ -2316,9 +2316,6 @@ at::Tensor XLANativeFunctions::pow(const at::Tensor& self,
 
 at::Tensor XLANativeFunctions::pow(const at::Tensor& self,
                                    const at::Tensor& exponent) {
-  std::cout << "Exponent " << exponent << std::endl;
-  at::Scalar scalar_value = exponent[0].item();
-  std::cout << "Scalar " << scalar_value << std::endl;
   TORCH_LAZY_FN_COUNTER("xla::");
   // xla::Pow() doesn't support integer types.
   if (!at::native::is_floating_point(self)) {
@@ -2505,32 +2502,14 @@ at::Tensor XLANativeFunctions::remainder(const at::Tensor& self,
       tensor_methods::remainder(bridge::GetXlaTensor(self), other));
 }
 
-at::Tensor XLANativeFunctions::repeat_interleave(const at::Tensor & repeats, 
-                             c10::optional<int64_t> output_size) {
-  TORCH_LAZY_FN_COUNTER("xla::");
-  // Trying to extract values from repeats ten
-  // auto r_ptr = exponent.data_ptr<int32_t>();
-  // std::vector<int32_t> repeat_ten{r_ptr, r_ptr + repeats.size(0)};
-  XLATensorPtr xla_repeat = bridge::GetXlaTensor(repeats);
-  std::vector<int64_t> vec = torch::lazy::Iota<int64_t>(repeats.size(0));
-  auto options = at::TensorOptions().dtype(at::kLong);
-  at::Tensor iota = at::from_blob(vec.data(), vec.size(), options);
-  XLATensorPtr self = bridge::GetOrCreateXlaTensor(iota, xla_repeat->GetDevice());
-  return bridge::AtenFromXlaTensor(
-      tensor_methods::repeat_interleave(self, xla_repeat, /*dim=*/0, output_size));
-}
-
 at::Tensor XLANativeFunctions::repeat_interleave(const at::Tensor & self, 
-                             const at::Tensor & repeats, 
+                             int64_t repeats, 
                              c10::optional<int64_t> dim, 
                              c10::optional<int64_t> output_size) {
   TORCH_LAZY_FN_COUNTER("xla::");
-  std::cout << "Repeat with self" << std::endl;
-  // auto r_ptr = exponent.data_ptr<int32_t>();
-  // std::vector<int32_t> repeat_ten{r_ptr, r_ptr + repeats.size(0)};
   return bridge::AtenFromXlaTensor(
       tensor_methods::repeat_interleave(bridge::GetXlaTensor(self), 
-                                        bridge::GetXlaTensor(repeats), dim, output_size));
+                                        repeats, dim, output_size));
 }
 
 at::Tensor XLANativeFunctions::replication_pad1d(const at::Tensor& self,
